@@ -58,7 +58,7 @@ def main():
         output_style = output_style)
 
 def show_usage():
-    print("Usage: ./fileVerifier.py -m <default | legacy> -w <work-dir>\n")
+    print("Usage: ./file_verifier.py -s <default | legacy> -w <work-dir>\n")
 
 def sum_from_file_CRC32(filename):
     from zlib import crc32
