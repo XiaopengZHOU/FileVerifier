@@ -6,17 +6,17 @@ class OutputStyle(Enum):
     Legacy = 1
 
 def main():
-    work_directory = None
     output_style = OutputStyle.Default
+    work_directory = None
 
     from getopt import error
     try:
         from getopt import getopt
         from sys import argv
 
-        opts, argv = getopt(argv[1:], "m:w:")
+        opts, argv = getopt(argv[1:], "s:w:")
         for k, v in opts:
-            if "-m" == k:
+            if "-s" == k:
                 if "legacy" == v.lower():
                     output_style = OutputStyle.Legacy
                 elif "default" == v.lower():
