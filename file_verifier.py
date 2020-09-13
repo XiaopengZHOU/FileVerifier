@@ -6,15 +6,22 @@ class OutputStyle(Enum):
     Legacy = 1
 
 def main():
+    from sys import argv
+    ret, output_style, work_directory = parse_command_line_options(argv)
+    if 0 != ret:
+        exit(ret)
+
+    verify_files(current_directory = work_directory,
+        output_style = output_style)
+
+def parse_command_line_options(arg_vector):
     output_style = OutputStyle.Default
     work_directory = None
 
     from getopt import error
     try:
         from getopt import getopt
-        from sys import argv
-
-        opts, argv = getopt(argv[1:], "s:w:")
+        opts, argv = getopt(arg_vector[1:], "s:w:")
         for k, v in opts:
             if "-s" == k:
                 if "legacy" == v.lower():
@@ -24,29 +31,31 @@ def main():
                 else:
                     show_usage()
 
-                    print("Unknown output style \"%s\"" % v)
+                    from sys import stderr
+                    print("Unknown output style \"%s\"" % v, file=stderr)
 
-                    exit(2)
+                    return 2, output_style, work_directory
 
             elif "-w" == k:
                 from os.path import isdir
                 if not isdir(v):
                     show_usage()
 
-                    print("Directory not found for option \"-w '%s'\"" % v)
+                    from sys import stderr
+                    print("Directory not found for option \"-w '%s'\"" % v,
+                        file=stderr)
 
-                    exit(2)
+                    return 2, output_style, work_directory
                 else:
                     work_directory = v
 
     except error as msg:
         show_usage()
 
-        from sys import stdout, stderr
-        stdout = stderr
-        print(msg)
+        from sys import stderr
+        print(msg, file=stderr)
 
-        exit(1)
+        return 1, output_style, work_directory
 
     if work_directory is None:
         from os import getcwd
@@ -54,8 +63,7 @@ def main():
 
     #print("WorkDirectory: \"%s\"" % work_directory)
 
-    verify_files(current_directory = work_directory,
-        output_style = output_style)
+    return 0, output_style, work_directory
 
 def show_usage():
     print("Usage: ./file_verifier.py -s <default | legacy> -w <work-dir>\n")
@@ -77,26 +85,26 @@ def verify_files(current_directory, output_style):
     items = listdir(current_directory)
 
     for item in items:
-        if not item.startswith("."):
-            from os.path import join
-            fullpath = join(current_directory, item)
+        # if item.startswith("."):
+        #     continue
 
-            #print("FullPath: \"%s\"" % fullpath)
+        from os.path import join
+        fullpath = join(current_directory, item)
 
-            from os import stat
-            st_mode = stat(fullpath).st_mode
+        #print("FullPath: \"%s\"" % fullpath)
 
-            from stat import S_ISDIR, S_ISLNK, S_ISREG
-            if S_ISLNK(st_mode):
-                pass
-            elif S_ISDIR(st_mode):
-                verify_files(current_directory = fullpath,
-                    output_style = output_style)
-            elif S_ISREG(st_mode):
-                if OutputStyle.Legacy == output_style:
-                    print("%s 0x%s" % (item, sum_from_file_CRC32(fullpath)))
-                else:
-                    print("%s %s" % (fullpath, sum_from_file_CRC32(fullpath)))
+        from os import stat
+        st_mode = stat(fullpath).st_mode
+
+        from stat import S_ISDIR, S_ISLNK, S_ISREG
+        if S_ISDIR(st_mode):
+            verify_files(current_directory = fullpath,
+                output_style = output_style)
+        elif S_ISREG(st_mode):
+            if OutputStyle.Legacy == output_style:
+                print("%s 0x%s" % (item, sum_from_file_CRC32(fullpath)))
+            else:
+                print("%s %s" % (fullpath, sum_from_file_CRC32(fullpath)))
 
 if __name__ == "__main__":
     main()
